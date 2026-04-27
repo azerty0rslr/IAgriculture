@@ -23,6 +23,8 @@ agri-ia-project/
 │   │   ├── services/         ← api.js (Axios), AuthContext.js
 │   │   ├── App.js            ← Routeur principal
 │   │   └── index.css         ← Design system complet
+│   ├── public/
+│   │   └── index.html
 │   ├── package.json
 │   ├── Dockerfile
 │   └── nginx.conf
@@ -40,34 +42,48 @@ agri-ia-project/
 
 ### Prérequis
 - Node.js 18+ et npm
-- MongoDB (local ou MongoDB Atlas)
+- MongoDB Community Server installé localement
+- Une clé API OpenAI (https://platform.openai.com)
 
 ### 1. Backend
-```bash
-cd backend
-cp .env.example .env        # Configurer les variables
-npm install
-npm run dev                  # Démarre sur http://localhost:5000
 ```
+cd backend
+npm install
+npm run dev
+```
+Démarre sur http://localhost:5000
 
-### 2. Frontend
-```bash
+### 2. Frontend (dans un 2ème terminal)
+```
 cd frontend
 npm install
-npm start                    # Démarre sur http://localhost:3000
+npm start
 ```
+Démarre sur http://localhost:3000
+
+> ⚠️ Sur Windows PowerShell, taper les commandes une par une.
 
 ---
 
-## 🐳 Démarrage avec Docker (production)
+## ⚙️ Configuration — fichier `.env`
 
-```bash
-docker-compose up --build
+Créer le fichier `backend/.env` (copier depuis `.env.example`) :
+
+```
+PORT=5000
+MONGO_URI=mongodb://localhost:27017/agri-ia
+JWT_SECRET=agri_ia_secret_key_2025
+NODE_ENV=development
+OPENAI_API_KEY=sk-xxxxxxxxxxxxxxxxxxxxxxxx
+OPENAI_MODEL=gpt-4o-mini
 ```
 
-- Frontend → http://localhost:3000
-- Backend API → http://localhost:5000
-- MongoDB → localhost:27017
+| Variable | Description |
+|---|---|
+| MONGO_URI | URL de connexion MongoDB (local ou Atlas) |
+| JWT_SECRET | Clé secrète pour signer les tokens JWT |
+| OPENAI_API_KEY | Clé API OpenAI (https://platform.openai.com) |
+| OPENAI_MODEL | Modèle OpenAI utilisé (défaut : gpt-4o-mini) |
 
 ---
 
@@ -83,27 +99,56 @@ docker-compose up --build
 | POST | /api/parcelles | Créer une parcelle | ✅ |
 | PUT | /api/parcelles/:id | Modifier une parcelle | ✅ |
 | DELETE | /api/parcelles/:id | Supprimer une parcelle | ✅ |
-| POST | /api/parcelles/:id/capteurs | Mise à jour IoT | ✅ |
+| POST | /api/parcelles/:id/capteurs | Mise à jour IoT simulée | ✅ |
 | POST | /api/diagnostics | Lancer un diagnostic IA | ✅ |
 | GET | /api/diagnostics | Historique diagnostics | ✅ |
+| GET | /api/diagnostics/:id | Détail d'un diagnostic | ✅ |
 | GET | /api/admin/users | Liste utilisateurs | ✅ 👑 |
-| PUT | /api/admin/users/:id/activer | Activer/désactiver | ✅ 👑 |
+| PUT | /api/admin/users/:id/activer | Activer/désactiver un user | ✅ 👑 |
 | DELETE | /api/admin/users/:id | Supprimer un user | ✅ 👑 |
+| GET | /api/admin/stats | Stats globales admin | ✅ 👑 |
 
 ---
 
-## 🤖 Module IA
+## 🤖 Module IA — OpenAI GPT-4o-mini
 
-Le module de diagnostic analyse les données capteurs (température, humidité, pH, luminosité) et les symptômes déclarés pour détecter :
+Le diagnostic IA est géré dans `backend/routes/diagnostics.js`.
 
-- **Mildiou** → humidité élevée + température fraîche
-- **Oïdium** → humidité faible + chaleur
-- **Chlorose ferrique** → pH trop bas
-- **Rouille foliaire** → conditions intermédiaires
+### Fonctionnement
+Quand un agriculteur soumet un diagnostic, le backend envoie un prompt structuré à OpenAI GPT-4o-mini avec les données capteurs (température, humidité, pH, luminosité), les symptômes visuels observés et le type de culture.
 
-Chaque résultat inclut : maladie détectée, probabilité (%), confiance du modèle, recommandation et traitements suggérés.
+GPT-4o-mini répond en JSON structuré avec :
+- Maladie détectée (ex: Mildiou, Oïdium, Chlorose ferrique...)
+- Probabilité (0-100%)
+- Confiance du modèle (0-100%)
+- Recommandation détaillée en français
+- Traitements suggérés
 
-> 💡 Pour aller plus loin : intégrer un modèle scikit-learn entraîné (via Python + Flask) ou l'API OpenAI GPT-4 pour des recommandations plus précises.
+### Sécurité
+- Les symptômes sont nettoyés avant envoi (anti-injection)
+- En cas d'échec OpenAI, un résultat de secours (fallback) est automatiquement sauvegardé en base avec statut "erreur"
+- Le modèle est configurable via OPENAI_MODEL dans .env
+
+### Exemple de réponse IA
+```json
+{
+  "maladie": "Mildiou",
+  "probabilite": 87,
+  "confiance": 92,
+  "recommandation": "Appliquer un fongicide à base de cuivre. Améliorer la ventilation des plants.",
+  "traitements": ["Fongicide cuivrique", "Réduction humidité", "Surveillance renforcée"]
+}
+```
+
+---
+
+## 👤 Créer un compte Administrateur
+
+1. S'inscrire sur http://localhost:3000
+2. Ouvrir MongoDB Compass → base agri-ia → collection users
+3. Trouver le document correspondant
+4. Modifier le champ role : "agriculteur" → "admin"
+5. Se reconnecter — le menu Administration apparaît dans la sidebar
 
 ---
 
@@ -115,9 +160,20 @@ Chaque résultat inclut : maladie détectée, probabilité (%), confiance du mod
 | Backend | Node.js + Express | Léger, rapide, REST |
 | Base de données | MongoDB + Mongoose | NoSQL adapté aux données capteurs |
 | Authentification | JWT + bcrypt | Standard industriel, sécurisé |
+| Intelligence Artificielle | OpenAI GPT-4o-mini | Diagnostic agronomique précis en français |
 | Cartographie | Leaflet + React-Leaflet | Open source, léger |
 | Graphiques | Recharts | Compatible React |
 | Déploiement | Docker + Nginx | Portabilité cloud |
+
+---
+
+## 🚀 Déploiement en production (à venir)
+
+| Service | Plateforme | Coût |
+|---|---|---|
+| Base de données | MongoDB Atlas | Gratuit |
+| Backend | Render | Gratuit |
+| Frontend | Vercel | Gratuit |
 
 ---
 

@@ -1,98 +1,166 @@
 const express = require('express');
 const router = express.Router();
+const OpenAI = require('openai');
 const Diagnostic = require('../models/Diagnostic');
 const { proteger } = require('../middleware/auth');
 
-// Simulation du modèle IA (à remplacer par appel Python/scikit-learn ou OpenAI)
-const simulerIA = (donnees) => {
-  const { temperature, humidite, ph, symptomes } = donnees;
+const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+});
 
-  const maladies = [
-    { nom: 'Mildiou', probabilite: 0, conditions: { humiditeMin: 70, tempMax: 25 } },
-    { nom: 'Oïdium', probabilite: 0, conditions: { humiditeMax: 60, tempMin: 20 } },
-    { nom: 'Rouille foliaire', probabilite: 0, conditions: { humiditeMin: 60, tempMin: 15, tempMax: 22 } },
-    { nom: 'Chlorose ferrique', probabilite: 0, conditions: { phMax: 6.5 } },
-  ];
+// Fonction IA avec OpenAI
+const analyserAvecIA = async (donnees) => {
+    const { temperature, humidite, ph, luminosite, symptomes, typeCulture } = donnees;
 
-  let maladieDetectee = { maladie: 'Aucune maladie détectée', probabilite: 5, confiance: 90 };
+    const symptomesSafe = Array.isArray(symptomes)
+        ? symptomes.map(s => String(s).replace(/"/g, "'"))
+        : [];
 
-  if (humidite >= 70 && temperature <= 25) {
-    maladieDetectee = { maladie: 'Mildiou', probabilite: Math.min(95, 50 + (humidite - 70)), confiance: 85 };
-  } else if (humidite <= 60 && temperature >= 20) {
-    maladieDetectee = { maladie: 'Oïdium', probabilite: Math.min(90, 40 + (temperature - 20) * 3), confiance: 78 };
-  } else if (ph <= 6.5) {
-    maladieDetectee = { maladie: 'Chlorose ferrique', probabilite: Math.min(88, 60 + (6.5 - ph) * 20), confiance: 82 };
-  }
+    const prompt = `Tu es un expert agronome spécialisé dans les maladies des cultures agricoles.
 
-  // Bonus probabilité selon symptomes déclarés
-  if (symptomes && symptomes.length > 0) {
-    maladieDetectee.probabilite = Math.min(99, maladieDetectee.probabilite + symptomes.length * 5);
-  }
+Voici les données d'une parcelle de ${typeCulture} :
+- Température : ${temperature}°C
+- Humidité : ${humidite}%
+- pH du sol : ${ph}
+- Luminosité : ${luminosite} lux
+- Symptômes observés : ${symptomesSafe.length > 0 ? symptomesSafe.join(', ') : 'aucun symptôme particulier'}
 
-  const recommandations = {
-    'Mildiou': 'Appliquer un fongicide à base de cuivre. Améliorer la ventilation. Éviter l\'arrosage le soir.',
-    'Oïdium': 'Traitement soufré préventif. Réduire l\'azote. Augmenter l\'espacement entre plants.',
-    'Chlorose ferrique': 'Apport de chélate de fer. Vérifier et ajuster le pH du sol (cible 6.5-7).',
-    'Rouille foliaire': 'Fongicide triazole recommandé. Rotation des cultures conseillée.',
-    'Aucune maladie détectée': 'Culture en bonne santé. Continuer la surveillance régulière.'
-  };
+Analyse ces données et réponds UNIQUEMENT en JSON valide avec cette structure exacte :
+{
+  "maladie": "nom de la maladie détectée ou Aucune maladie détectée",
+  "probabilite": nombre entre 0 et 100,
+  "confiance": nombre entre 0 et 100,
+  "recommandation": "recommandation détaillée en français",
+  "traitements": ["traitement 1", "traitement 2", "traitement 3"]
+}`;
 
-  return {
-    ...maladieDetectee,
-    recommandation: recommandations[maladieDetectee.maladie] || 'Consulter un agronome.',
-    traitements: maladieDetectee.maladie !== 'Aucune maladie détectée'
-      ? ['Traitement chimique', 'Surveillance renforcée', 'Rapport agronome']
-      : ['Surveillance standard']
-  };
+    const response = await openai.chat.completions.create({
+        model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.3,
+        max_tokens: 500,
+    });
+
+    if (!response.choices || response.choices.length === 0) {
+        throw new Error('Réponse OpenAI vide');
+    }
+
+    const contenu = response.choices[0].message?.content?.trim();
+
+    if (!contenu) {
+        throw new Error('Contenu IA vide');
+    }
+
+    const jsonPropre = contenu.replace(/```json|```/g, '').trim();
+
+    let resultat;
+    try {
+        resultat = JSON.parse(jsonPropre);
+    } catch (err) {
+        console.error('Erreur parsing JSON IA:', err.message);
+        throw new Error('Réponse IA invalide');
+    }
+
+    return resultat;
 };
 
 // POST /api/diagnostics - Nouveau diagnostic
 router.post('/', proteger, async (req, res) => {
-  try {
-    const { typeCulture, parcelleId, donneesEntree } = req.body;
+    try {
+        const { typeCulture, parcelleId, donneesEntree } = req.body;
 
-    const resultatIA = simulerIA(donneesEntree);
+        if (!typeCulture) {
+            return res.status(400).json({ message: 'Le type de culture est requis.' });
+        }
 
-    const diagnostic = await Diagnostic.create({
-      userId: req.user._id,
-      parcelleId,
-      typeCulture,
-      donneesEntree,
-      resultatIA,
-      statut: 'traite'
-    });
+        if (!donneesEntree) {
+            return res.status(400).json({ message: "Les données d'entrée sont requises." });
+        }
 
-    res.status(201).json({ message: 'Diagnostic effectué.', diagnostic });
-  } catch (err) {
-    res.status(500).json({ message: 'Erreur lors du diagnostic.', erreur: err.message });
-  }
+        const resultatIA = await analyserAvecIA({ ...donneesEntree, typeCulture });
+
+        const diagnostic = await Diagnostic.create({
+            userId: req.user._id,
+            parcelleId: parcelleId || null,
+            typeCulture,
+            donneesEntree,
+            resultatIA,
+            statut: 'traite'
+        });
+
+        res.status(201).json({ message: 'Diagnostic effectué.', diagnostic });
+
+    } catch (err) {
+        console.error('Erreur diagnostic IA:', err);
+
+        const fallback = {
+            maladie: 'Analyse indisponible',
+            probabilite: 0,
+            confiance: 0,
+            recommandation: 'Le service IA est temporairement indisponible. Consultez un agronome.',
+            traitements: ['Consultation agronome recommandée']
+        };
+
+        try {
+            const { typeCulture, parcelleId, donneesEntree } = req.body;
+
+            const diagnostic = await Diagnostic.create({
+                userId: req.user._id,
+                parcelleId: parcelleId || null,
+                typeCulture: typeCulture || 'inconnu',
+                donneesEntree: donneesEntree || {},
+                resultatIA: fallback,
+                statut: 'erreur'
+            });
+
+            return res.status(500).json({
+                message: 'Erreur lors du diagnostic IA.',
+                erreur: err.message,
+                diagnosticFallback: diagnostic
+            });
+
+        } catch (dbErr) {
+            console.error('Erreur sauvegarde fallback:', dbErr);
+            return res.status(500).json({
+                message: 'Erreur critique serveur.',
+                erreur: err.message
+            });
+        }
+    }
 });
 
-// GET /api/diagnostics - Historique des diagnostics
+// GET /api/diagnostics - Historique
 router.get('/', proteger, async (req, res) => {
-  try {
-    const diagnostics = await Diagnostic.find({ userId: req.user._id })
-      .populate('parcelleId', 'nom culture')
-      .sort({ dateCreation: -1 })
-      .limit(20);
+    try {
+        const diagnostics = await Diagnostic.find({ userId: req.user._id })
+            .populate('parcelleId', 'nom culture')
+            .sort({ dateCreation: -1 })
+            .limit(20);
 
-    res.json({ diagnostics });
-  } catch (err) {
-    res.status(500).json({ message: 'Erreur serveur.', erreur: err.message });
-  }
+        res.json({ diagnostics });
+
+    } catch (err) {
+        res.status(500).json({ message: 'Erreur serveur.', erreur: err.message });
+    }
 });
 
 // GET /api/diagnostics/:id
 router.get('/:id', proteger, async (req, res) => {
-  try {
-    const diagnostic = await Diagnostic.findOne({ _id: req.params.id, userId: req.user._id })
-      .populate('parcelleId', 'nom culture coordonnees');
+    try {
+        const diagnostic = await Diagnostic.findOne({
+            _id: req.params.id,
+            userId: req.user._id
+        }).populate('parcelleId', 'nom culture coordonnees');
 
-    if (!diagnostic) return res.status(404).json({ message: 'Diagnostic introuvable.' });
-    res.json({ diagnostic });
-  } catch (err) {
-    res.status(500).json({ message: 'Erreur serveur.', erreur: err.message });
-  }
+        if (!diagnostic) {
+            return res.status(404).json({ message: 'Diagnostic introuvable.' });
+        }
+
+        res.json({ diagnostic });
+
+    } catch (err) {
+        res.status(500).json({ message: 'Erreur serveur.', erreur: err.message });
+    }
 });
 
 module.exports = router;
