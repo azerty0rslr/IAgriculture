@@ -1,25 +1,46 @@
 version: '3.8'
 
 services:
-  # Base de données MongoDB
-  mongodb:
-    image: mongo:7
-    container_name: agri-ia-mongodb
+
+  # ─── WAF — BunkerWeb (Firewall applicatif) ──────────────
+  bunkerweb:
+    image: bunkerity/bunkerweb:1.5.8
+    container_name: agri-ia-waf
     restart: unless-stopped
     ports:
-      - "27017:27017"
-    volumes:
-      - mongodb_data:/data/db
+      - "80:8080"
+      - "443:8443"
     environment:
-      MONGO_INITDB_DATABASE: agri-ia
+      - SERVER_NAME=localhost
+      - USE_REVERSE_PROXY=yes
+      - REVERSE_PROXY_URL=/
+      - REVERSE_PROXY_HOST=http://frontend:80
+      - USE_GZIP=yes
+      - USE_LIMIT_REQ=yes
+    depends_on:
+      - frontend
+    networks:
+      - agri-network
 
-  # Backend Node.js
+  # ─── Frontend React ──────────────────────────────────────
+  frontend:
+    build: ./frontend
+    container_name: agri-ia-frontend
+    restart: unless-stopped
+    expose:
+      - "80"
+    depends_on:
+      - backend
+    networks:
+      - agri-network
+
+  # ─── Backend Node.js ─────────────────────────────────────
   backend:
     build: ./backend
     container_name: agri-ia-backend
     restart: unless-stopped
-    ports:
-      - "5000:5000"
+    expose:
+      - "5000"
     depends_on:
       - mongodb
     environment:
@@ -27,16 +48,30 @@ services:
       - MONGO_URI=mongodb://mongodb:27017/agri-ia
       - JWT_SECRET=agri_ia_secret_key_change_en_production_2025
       - NODE_ENV=production
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_MODEL=gpt-4o-mini
+    networks:
+      - agri-network
 
-  # Frontend React
-  frontend:
-    build: ./frontend
-    container_name: agri-ia-frontend
+  # ─── Base de données MongoDB ─────────────────────────────
+  mongodb:
+    image: mongo:7
+    container_name: agri-ia-mongodb
     restart: unless-stopped
-    ports:
-      - "3000:80"
-    depends_on:
-      - backend
+    expose:
+      - "27017"
+    volumes:
+      - mongodb_data:/data/db
+    environment:
+      - MONGO_INITDB_DATABASE=agri-ia
+    networks:
+      - agri-network
 
+# ─── Volumes persistants ─────────────────────────────────
 volumes:
   mongodb_data:
+
+# ─── Réseau interne ──────────────────────────────────────
+networks:
+  agri-network:
+    driver: bridge
