@@ -1,42 +1,110 @@
-const express = require('express');
-const cors = require('cors');
-const mongoose = require('mongoose');
-const dotenv = require('dotenv');
+// ─────────────────────────────────────────────────────────
+// AgriIA — Serveur principal Node.js + Express
+// ─────────────────────────────────────────────────────────
 
+// Importation des modules nécessaires
+const express = require('express');        // Framework web Node.js
+const cors = require('cors');              // Autoriser les requêtes cross-origin (frontend → backend)
+const mongoose = require('mongoose');      // ODM pour communiquer avec MongoDB
+const dotenv = require('dotenv');          // Charger les variables d'environnement depuis .env
+const rateLimit = require('express-rate-limit'); // Protection contre les attaques par force brute
+
+// Chargement des variables d'environnement (.env)
 dotenv.config();
 
+// Initialisation de l'application Express
 const app = express();
+
+// Port d'écoute du serveur (5000 par défaut ou défini dans .env)
 const PORT = process.env.PORT || 5000;
 
-// Middleware
-app.use(cors());
-app.use(express.json());
+// ─────────────────────────────────────────────────────────
+// RATE LIMITING — Protection contre les attaques
+// ─────────────────────────────────────────────────────────
 
-// Routes
-const authRoutes = require('./routes/auth');
-const diagnosticRoutes = require('./routes/diagnostics');
-const parcellesRoutes = require('./routes/parcelles');
-const dashboardRoutes = require('./routes/dashboard');
-const adminRoutes = require('./routes/admin');
-
-app.use('/api/auth', authRoutes);
-app.use('/api/diagnostics', diagnosticRoutes);
-app.use('/api/parcelles', parcellesRoutes);
-app.use('/api/dashboard', dashboardRoutes);
-app.use('/api/admin', adminRoutes);
-
-// MongoDB connection
-mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/agri-ia')
-  .then(() => console.log('✅ MongoDB connecté'))
-  .catch((err) => console.error('❌ Erreur MongoDB:', err));
-
-// Health check
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK', timestamp: new Date().toISOString() });
+// Limite globale : 100 requêtes maximum par IP toutes les 15 minutes
+// Appliquée sur toutes les routes de l'application
+const globalLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // Fenêtre de temps : 15 minutes en millisecondes
+    max: 100,                  // Nombre maximum de requêtes autorisées par IP
+    message: { message: 'Trop de requêtes, réessaie dans 15 minutes.' }
 });
 
+// Limite stricte sur l'authentification : 10 tentatives par 15 minutes
+// Empêche les attaques par force brute sur les mots de passe
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // Fenêtre de temps : 15 minutes
+    max: 10,                   // Seulement 10 tentatives de connexion autorisées
+    message: { message: 'Trop de tentatives de connexion, réessaie dans 15 minutes.' }
+});
+
+// ─────────────────────────────────────────────────────────
+// MIDDLEWARE GLOBAUX
+// ─────────────────────────────────────────────────────────
+
+// Autorise les requêtes venant du frontend (React sur localhost:3000 ou Vercel)
+app.use(cors());
+
+// Permet de lire le corps des requêtes au format JSON
+app.use(express.json());
+
+// Application du limiteur global sur toutes les routes
+app.use(globalLimiter);
+
+// ─────────────────────────────────────────────────────────
+// IMPORTATION DES ROUTES
+// ─────────────────────────────────────────────────────────
+
+const authRoutes = require('./routes/auth');           // Routes : inscription, connexion, profil
+const diagnosticRoutes = require('./routes/diagnostics'); // Routes : diagnostic IA (OpenAI)
+const parcellesRoutes = require('./routes/parcelles'); // Routes : gestion des parcelles agricoles
+const dashboardRoutes = require('./routes/dashboard'); // Routes : statistiques tableau de bord
+const adminRoutes = require('./routes/admin');         // Routes : administration (rôle admin uniquement)
+
+// ─────────────────────────────────────────────────────────
+// RATE LIMITING SPÉCIFIQUE — Authentification
+// ─────────────────────────────────────────────────────────
+
+// Applique la limite stricte sur la connexion (10 tentatives max)
+app.use('/api/auth/connexion', authLimiter);
+
+// Applique la limite stricte sur l'inscription (évite la création massive de faux comptes)
+app.use('/api/auth/inscription', authLimiter);
+
+// ─────────────────────────────────────────────────────────
+// DÉCLARATION DES ROUTES API
+// ─────────────────────────────────────────────────────────
+
+app.use('/api/auth', authRoutes);           // /api/auth/inscription, /api/auth/connexion, /api/auth/moi
+app.use('/api/diagnostics', diagnosticRoutes); // /api/diagnostics (POST, GET)
+app.use('/api/parcelles', parcellesRoutes); // /api/parcelles (CRUD + capteurs IoT)
+app.use('/api/dashboard', dashboardRoutes); // /api/dashboard (stats globales)
+app.use('/api/admin', adminRoutes);         // /api/admin/users (gestion utilisateurs)
+
+// ─────────────────────────────────────────────────────────
+// CONNEXION À MONGODB
+// ─────────────────────────────────────────────────────────
+
+mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/agri-ia')
+    .then(() => console.log('✅ MongoDB connecté'))
+    .catch((err) => console.error('❌ Erreur MongoDB:', err));
+
+// ─────────────────────────────────────────────────────────
+// ROUTE DE SANTÉ — Health Check
+// ─────────────────────────────────────────────────────────
+
+// Permet de vérifier que le serveur tourne correctement
+// Accessible sur : GET /api/health
+app.get('/api/health', (req, res) => {
+    res.json({ status: 'OK', timestamp: new Date().toISOString() });
+});
+
+// ─────────────────────────────────────────────────────────
+// DÉMARRAGE DU SERVEUR
+// ─────────────────────────────────────────────────────────
+
 app.listen(PORT, () => {
-  console.log(`🚀 Serveur démarré sur le port ${PORT}`);
+    console.log(`🚀 Serveur démarré sur le port ${PORT}`);
 });
 
 module.exports = app;
