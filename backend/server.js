@@ -8,6 +8,7 @@ const cors = require('cors');              // Autoriser les requêtes cross-orig
 const mongoose = require('mongoose');      // ODM pour communiquer avec MongoDB
 const dotenv = require('dotenv');          // Charger les variables d'environnement depuis .env
 const rateLimit = require('express-rate-limit'); // Protection contre les attaques par force brute
+const helmet = require('helmet');          // Sécurisation des headers HTTP
 
 // Chargement des variables d'environnement (.env)
 dotenv.config();
@@ -43,7 +44,14 @@ const authLimiter = rateLimit({
 // ─────────────────────────────────────────────────────────
 
 // Autorise les requêtes venant du frontend (React sur localhost:3000 ou Vercel)
-app.use(cors());
+app.use(cors({
+    origin: process.env.FRONTEND_URL,
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+}));
+
+// Sécurise les headers HTTP (protection XSS, clickjacking, MIME sniffing, etc.)
+app.use(helmet());
 
 // Permet de lire le corps des requêtes au format JSON
 app.use(express.json());
