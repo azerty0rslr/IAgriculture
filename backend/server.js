@@ -16,6 +16,10 @@ dotenv.config();
 // Initialisation de l'application Express
 const app = express();
 
+// Nécessaire pour Render (reverse proxy) — permet à express-rate-limit
+// d'identifier correctement les IPs via le header X-Forwarded-For
+app.set('trust proxy', 1);
+
 // Port d'écoute du serveur (5000 par défaut ou défini dans .env)
 const PORT = process.env.PORT || 5000;
 
@@ -83,17 +87,17 @@ app.use('/api/auth/inscription', authLimiter);
 // DÉCLARATION DES ROUTES API
 // ─────────────────────────────────────────────────────────
 
-app.use('/api/auth', authRoutes);           // /api/auth/inscription, /api/auth/connexion, /api/auth/moi
+app.use('/api/auth', authRoutes);              // /api/auth/inscription, /api/auth/connexion, /api/auth/moi
 app.use('/api/diagnostics', diagnosticRoutes); // /api/diagnostics (POST, GET)
-app.use('/api/parcelles', parcellesRoutes); // /api/parcelles (CRUD + capteurs IoT)
-app.use('/api/dashboard', dashboardRoutes); // /api/dashboard (stats globales)
-app.use('/api/admin', adminRoutes);         // /api/admin/users (gestion utilisateurs)
+app.use('/api/parcelles', parcellesRoutes);    // /api/parcelles (CRUD + capteurs IoT)
+app.use('/api/dashboard', dashboardRoutes);    // /api/dashboard (stats globales)
+app.use('/api/admin', adminRoutes);            // /api/admin/users (gestion utilisateurs)
 
 // ─────────────────────────────────────────────────────────
-// CONNEXION À MONGODB
+// CONNEXION À MONGODB ATLAS
 // ─────────────────────────────────────────────────────────
 
-mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/agri-ia')
+mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log('✅ MongoDB connecté'))
     .catch((err) => console.error('❌ Erreur MongoDB:', err));
 
