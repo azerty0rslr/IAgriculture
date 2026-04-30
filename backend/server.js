@@ -49,9 +49,20 @@ const authLimiter = rateLimit({
 
 // Autorise les requêtes venant du frontend (React sur localhost:3000 ou Vercel)
 app.use(cors({
-    origin: process.env.FRONTEND_URL,
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    origin: [
+        'https://agri-ia-9ya4.vercel.app',
+        'https://agri-ia.vercel.app',
+        'http://localhost:3000'
+    ],
+    allowedHeaders: [
+        'Content-Type',
+        'Authorization',
+        'Cache-Control',
+        'Pragma',
+        'Expires'
+    ],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    credentials: true
 }));
 
 // Sécurise les headers HTTP (protection XSS, clickjacking, MIME sniffing, etc.)
