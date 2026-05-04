@@ -1,9 +1,9 @@
-# 🌿 AgriIA — Application de diagnostic intelligent pour l'agriculture
+# AgriIA — Application de diagnostic intelligent pour l'agriculture
 > Projet Bachelor 2 — Sup de Vinci × Chambre d'Agriculture
 
 ---
 
-## 📁 Structure du projet
+## Structure du projet
 
 ```
 agri-ia-project/
@@ -38,7 +38,7 @@ agri-ia-project/
 
 ---
 
-## 🚀 Démarrage rapide (développement)
+## Démarrage rapide (développement)
 
 ### Prérequis
 - Node.js 18+ et npm
@@ -61,11 +61,11 @@ npm start
 ```
 Démarre sur http://localhost:3000
 
-> ⚠️ Sur Windows PowerShell, taper les commandes une par une.
+> Sur Windows PowerShell, taper les commandes une par une.
 
 ---
 
-## ⚙️ Configuration — fichier `.env`
+## Configuration — fichier `.env`
 
 Créer le fichier `backend/.env` (copier depuis `.env.example`) :
 
@@ -87,30 +87,30 @@ OPENAI_MODEL=gpt-4o-mini
 
 ---
 
-## 📡 Endpoints API
+## Endpoints API
 
 | Méthode | Route | Description | Auth |
 |---|---|---|---|
-| POST | /api/auth/inscription | Créer un compte | ❌ |
-| POST | /api/auth/connexion | Se connecter (→ JWT) | ❌ |
-| GET | /api/auth/moi | Profil utilisateur | ✅ |
-| GET | /api/dashboard | Stats tableau de bord | ✅ |
-| GET | /api/parcelles | Liste des parcelles | ✅ |
-| POST | /api/parcelles | Créer une parcelle | ✅ |
-| PUT | /api/parcelles/:id | Modifier une parcelle | ✅ |
-| DELETE | /api/parcelles/:id | Supprimer une parcelle | ✅ |
-| POST | /api/parcelles/:id/capteurs | Mise à jour IoT simulée | ✅ |
-| POST | /api/diagnostics | Lancer un diagnostic IA | ✅ |
-| GET | /api/diagnostics | Historique diagnostics | ✅ |
-| GET | /api/diagnostics/:id | Détail d'un diagnostic | ✅ |
-| GET | /api/admin/users | Liste utilisateurs | ✅ 👑 |
-| PUT | /api/admin/users/:id/activer | Activer/désactiver un user | ✅ 👑 |
-| DELETE | /api/admin/users/:id | Supprimer un user | ✅ 👑 |
-| GET | /api/admin/stats | Stats globales admin | ✅ 👑 |
+| POST | /api/auth/inscription | Créer un compte | X |
+| POST | /api/auth/connexion | Se connecter (→ JWT) | X |
+| GET | /api/auth/moi | Profil utilisateur | OK |
+| GET | /api/dashboard | Stats tableau de bord | OK |
+| GET | /api/parcelles | Liste des parcelles | OK |
+| POST | /api/parcelles | Créer une parcelle | OK |
+| PUT | /api/parcelles/:id | Modifier une parcelle | OK |
+| DELETE | /api/parcelles/:id | Supprimer une parcelle | OK |
+| POST | /api/parcelles/:id/capteurs | Mise à jour IoT simulée | OK |
+| POST | /api/diagnostics | Lancer un diagnostic IA | OK |
+| GET | /api/diagnostics | Historique diagnostics | OK |
+| GET | /api/diagnostics/:id | Détail d'un diagnostic | OK |
+| GET | /api/admin/users | Liste utilisateurs | OK |
+| PUT | /api/admin/users/:id/activer | Activer/désactiver un user | OK |
+| DELETE | /api/admin/users/:id | Supprimer un user | OK |
+| GET | /api/admin/stats | Stats globales admin | OK |
 
 ---
 
-## 🤖 Module IA — OpenAI GPT-4o-mini
+## Module IA — OpenAI GPT-4o-mini
 
 Le diagnostic IA est géré dans `backend/routes/diagnostics.js`.
 
@@ -142,7 +142,7 @@ GPT-4o-mini répond en JSON structuré avec :
 
 ---
 
-## 👤 Créer un compte Administrateur
+## Créer un compte Administrateur
 
 1. S'inscrire sur http://localhost:3000
 2. Ouvrir MongoDB Compass → base agri-ia → collection users
@@ -152,22 +152,22 @@ GPT-4o-mini répond en JSON structuré avec :
 
 ---
 
-## 🛠️ Technologies utilisées
+## Technologies utilisées
 
 | Couche | Technologie | Justification |
 |---|---|---|
 | Frontend | React.js + React Router | Framework JS vu en B2 |
-| Backend | Node.js + Express | Léger, rapide, REST |
+| Backend | Node.js + Express | Vu en BDD |
 | Base de données | MongoDB + Mongoose | NoSQL adapté aux données capteurs |
 | Authentification | JWT + bcrypt | Standard industriel, sécurisé |
-| Intelligence Artificielle | OpenAI GPT-4o-mini | Diagnostic agronomique précis en français |
+| Intelligence Artificielle | OpenAI GPT-4o-mini | Diagnostic précis en français |
 | Cartographie | Leaflet + React-Leaflet | Open source, léger |
 | Graphiques | Recharts | Compatible React |
 | Déploiement | Docker + Nginx | Portabilité cloud |
 
 ---
 
-## 🚀 Déploiement en production (à venir)
+## Déploiement en production
 
 | Service | Plateforme | Coût |
 |---|---|---|
