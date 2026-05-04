@@ -1,5 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap');
 
+/*  Variables globales  */
 :root {
   --vert-profond: #1a3a2a;
   --vert-fonce: #2d5a3d;
@@ -22,16 +23,18 @@
   --texte-doux: #4a6151;
   --ombre: rgba(26, 58, 42, 0.1);
   --ombre-forte: rgba(26, 58, 42, 0.25);
-  --rayon: 12px;
-  --rayon-lg: 20px;
+  --rayon: 12px;       /* border-radius standard */
+  --rayon-lg: 20px;    /* border-radius pour les cards */
 }
 
+/* Minimal  */
 * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
 
+/* Base  */
 body {
   font-family: 'DM Sans', sans-serif;
   background-color: var(--gris-clair);
@@ -39,17 +42,19 @@ body {
   line-height: 1.6;
 }
 
+/* Titres en serif et corps en sans-serif */
 h1, h2, h3 {
   font-family: 'DM Serif Display', serif;
   color: var(--vert-profond);
 }
 
-/* Layout principal */
+/* Layout principal  */
 .app-layout {
   display: flex;
   min-height: 100vh;
 }
 
+/* Barre de navigation, au dessus de tout */
 .sidebar {
   width: 260px;
   background: var(--vert-profond);
@@ -90,6 +95,7 @@ h1, h2, h3 {
   gap: 4px;
 }
 
+/* Fond semi-transparent si souris devant et sur item actif */
 .nav-item {
   display: flex;
   align-items: center;
@@ -115,6 +121,7 @@ h1, h2, h3 {
 
 .nav-item .icon { font-size: 1.1rem; }
 
+/* Footer de barre de nav : infos utilisateur + bouton déconnexion */
 .sidebar-footer {
   padding: 16px 12px;
   border-top: 1px solid rgba(255,255,255,0.1);
@@ -127,6 +134,7 @@ h1, h2, h3 {
   padding: 10px;
 }
 
+/* Avatar avec initiales */
 .avatar {
   width: 36px;
   height: 36px;
@@ -140,9 +148,11 @@ h1, h2, h3 {
 }
 
 .user-info-text { flex: 1; min-width: 0; }
+/* Si nom trop logn */
 .user-info-text strong { display: block; font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .user-info-text span { font-size: 0.75rem; color: rgba(255,255,255,0.5); }
 
+/* Contenu décalé de la barre de navigation */
 .main-content {
   flex: 1;
   margin-left: 260px;
@@ -150,7 +160,7 @@ h1, h2, h3 {
   min-height: 100vh;
 }
 
-/* Cards */
+/* Les cards */
 .card {
   background: white;
   border-radius: var(--rayon-lg);
@@ -167,6 +177,7 @@ h1, h2, h3 {
   border: 1px solid rgba(0,0,0,0.04);
 }
 
+/* Bordure gauche en fonction de la stat */
 .stat-card.vert { border-left: 4px solid var(--vert-clair); }
 .stat-card.terre { border-left: 4px solid var(--terre); }
 .stat-card.soleil { border-left: 4px solid var(--soleil); }
@@ -175,7 +186,7 @@ h1, h2, h3 {
 .stat-value { font-size: 2rem; font-weight: 600; color: var(--vert-profond); }
 .stat-label { font-size: 0.82rem; color: var(--texte-doux); margin-top: 2px; }
 
-/* Grid */
+/* Grilles */
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
 .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
 .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
@@ -218,9 +229,10 @@ h1, h2, h3 {
   transition: border-color 0.15s;
   outline: none;
 }
+/* Bordure verte au focus */
 .form-control:focus { border-color: var(--vert-clair); }
 
-/* Badge risque */
+/* Rond colorée sur chaque parcelle en fonction du risque */
 .badge {
   display: inline-flex;
   align-items: center;
@@ -235,7 +247,7 @@ h1, h2, h3 {
 .badge-eleve { background: #fed7aa; color: #9a3412; }
 .badge-critique { background: var(--danger-clair); color: var(--danger); }
 
-/* Page header */
+/* En-tête */
 .page-header { margin-bottom: 28px; }
 .page-header h1 { font-size: 1.8rem; margin-bottom: 4px; }
 .page-header p { color: var(--texte-doux); font-size: 0.9rem; }
@@ -249,7 +261,8 @@ h1, h2, h3 {
   color: var(--texte-doux);
 }
 
-/* Probabilité IA */
+/* Barres de probabilité IA */
+/* Barre de progression de confiance du diagnostic */
 .proba-bar {
   height: 10px;
   border-radius: 99px;
@@ -267,7 +280,8 @@ h1, h2, h3 {
 .proba-eleve { background: var(--warning); }
 .proba-critique { background: var(--danger); }
 
-/* Login page */
+/* Page login */
+/* Fond vert et carte au centre */
 .login-page {
   min-height: 100vh;
   display: flex;
@@ -293,14 +307,16 @@ h1, h2, h3 {
 .login-logo h1 { font-size: 2rem; color: var(--vert-profond); }
 .login-logo p { color: var(--texte-doux); font-size: 0.85rem; margin-top: 4px; }
 
-/* Table */
+/* Tableau */
 table { width: 100%; border-collapse: collapse; }
 th { text-align: left; padding: 12px 16px; font-size: 0.8rem; color: var(--texte-doux); font-weight: 500; border-bottom: 1px solid #e0ddd8; }
 td { padding: 14px 16px; font-size: 0.88rem; border-bottom: 1px solid #f5f3f0; }
 tr:last-child td { border-bottom: none; }
+/* Changement de couleur au passage de la souris */
 tr:hover td { background: var(--vert-mint); }
 
-/* Responsive minimal */
+/* Responsive */
+/* En dessous de 900px : barre navigation masquée, grilles sur une colonne */
 @media (max-width: 900px) {
   .sidebar { transform: translateX(-260px); }
   .main-content { margin-left: 0; padding: 20px; }

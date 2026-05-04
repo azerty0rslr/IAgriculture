@@ -2,16 +2,21 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../services/AuthContext';
 
+// Page connexion/inscription
 export default function LoginPage() {
-  const [mode, setMode] = useState('connexion'); // 'connexion' | 'inscription'
+  const [mode, setMode] = useState('connexion');
+
+  // Formulaire inscription
   const [form, setForm] = useState({ nom: '', prenom: '', email: '', motDePasse: '', region: '' });
   const [erreur, setErreur] = useState('');
   const [chargement, setChargement] = useState(false);
-  const { connecter, inscrire } = useAuth();
+  const { connecter, inscrire } = useAuth(); 
   const navigate = useNavigate();
 
+  // MAJ des champs
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
+  // Envoie du formulaire puis dashboard
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErreur('');
@@ -24,6 +29,7 @@ export default function LoginPage() {
       }
       navigate('/dashboard');
     } catch (err) {
+      // Redirection serveur ou message d'erreur
       setErreur(err.response?.data?.message || 'Une erreur est survenue.');
     } finally {
       setChargement(false);
@@ -33,12 +39,15 @@ export default function LoginPage() {
   return (
     <div className="login-page">
       <div className="login-card">
+
+        /* Logo, titre, sous-titre */
         <div className="login-logo">
-          <div style={{ fontSize: '2.5rem', marginBottom: '8px' }}>🌿</div>
+          <div style={{ fontSize: '2.5rem', marginBottom: '8px' }}></div>
           <h1>AgriIA</h1>
-          <p>Chambre d'Agriculture — Outil de diagnostic intelligent</p>
+          <p>Chambre d'Agriculture - Outil de diagnostic IA</p>
         </div>
 
+        /* Sélection connexion ou inscription */
         <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', background: '#f0ede8', borderRadius: '10px', padding: '4px' }}>
           {['connexion', 'inscription'].map((m) => (
             <button
@@ -60,6 +69,8 @@ export default function LoginPage() {
         </div>
 
         <form onSubmit={handleSubmit}>
+
+          /* Formulaire inscription */
           {mode === 'inscription' && (
             <>
               <div className="grid-2">
@@ -72,6 +83,8 @@ export default function LoginPage() {
                   <input className="form-control" name="nom" value={form.nom} onChange={handleChange} required placeholder="Dupont" />
                 </div>
               </div>
+
+              /* Liste des régions (FR uniquement) */
               <div className="form-group">
                 <label>Région</label>
                 <select className="form-control" name="region" value={form.region} onChange={handleChange}>
@@ -84,6 +97,7 @@ export default function LoginPage() {
             </>
           )}
 
+          /* Champs connexion et inscription */
           <div className="form-group">
             <label>Email</label>
             <input className="form-control" type="email" name="email" value={form.email} onChange={handleChange} required placeholder="jean.dupont@email.fr" />
@@ -94,20 +108,25 @@ export default function LoginPage() {
             <input className="form-control" type="password" name="motDePasse" value={form.motDePasse} onChange={handleChange} required placeholder="••••••••" />
           </div>
 
+          /* Message d'erreur */
           {erreur && (
             <div style={{ background: '#fee2e2', color: '#dc2626', padding: '10px 14px', borderRadius: '8px', fontSize: '0.85rem', marginBottom: '16px' }}>
               {erreur}
             </div>
           )}
 
+          /* BOUTON ENVOIE */
           <button type="submit" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '12px' }} disabled={chargement}>
-            {chargement ? '⏳ Chargement...' : mode === 'connexion' ? '🔐 Se connecter' : '✅ Créer mon compte'}
+            {chargement ? 'Chargement...' : mode === 'connexion' ? 'Se connecter' : 'Créer mon compte'}
           </button>
+
         </form>
 
+        /* Nom du projet en footer */
         <p style={{ textAlign: 'center', fontSize: '0.78rem', color: '#9ca3af', marginTop: '20px' }}>
-          Projet Bachelor 2 — Sup de Vinci × Chambre d'Agriculture
+          Projet Bachelor 2 - Sup de Vinci & Chambre d'Agriculture
         </p>
+
       </div>
     </div>
   );
